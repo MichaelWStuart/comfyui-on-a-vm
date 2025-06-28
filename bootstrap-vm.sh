@@ -71,9 +71,9 @@ echo "Detected CONTAINER_HOME: $CONTAINER_HOME"
 export CONTAINER_HOME
 
 # Run step scripts in order
-run_step step1_os.sh
-run_step step2_gpu.sh
-run_step step3_docker.sh
+# run_step step1_os.sh
+# run_step step2_gpu.sh
+# run_step step3_docker.sh
 run_step step4_run.sh
 # run_step step5_nodes.sh
 
