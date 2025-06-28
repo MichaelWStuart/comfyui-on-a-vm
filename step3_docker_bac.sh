@@ -82,19 +82,26 @@ sudo docker run -d --gpus all \
   --restart unless-stopped \
   pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime sleep infinity
 
-# Inside the running container: install Python, pip, git, curl, xformers, and comfy-cli
+# Inside the running container: install Python, pip, git, and curl
 sudo docker exec "$CONTAINER_NAME" bash -c "\
   apt update && \
-  apt install -y python3 python3-pip git curl && \
-  pip3 install xformers comfy-cli \
+  apt install -y python3 python3-pip git curl \
 "
+
+# Inside the container: install xformers for efficient attention
+sudo docker exec "$CONTAINER_NAME" pip3 install xformers
 
 # Inside the container: clone ComfyUI and install requirements
 sudo docker exec "$CONTAINER_NAME" git clone \
   https://github.com/comfyanonymous/ComfyUI.git /workspace/ComfyUI
 sudo docker exec "$CONTAINER_NAME" pip3 install \
   -r /workspace/ComfyUI/requirements.txt
-  
+
+# Inside the container: clone ComfyUI Manager node
+sudo docker exec "$CONTAINER_NAME" bash -c "\
+  cd /workspace/ComfyUI/custom_nodes && \
+  git clone https://github.com/ltdrdata/ComfyUI-Manager.git comfyui-manager \
+"
 
 # Final check: verify torch.cuda availability
 sudo docker exec "$CONTAINER_NAME" python3 - <<'PYCODE'
