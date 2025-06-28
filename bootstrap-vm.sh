@@ -1,13 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-# Usage helper
+# Parse and validate arguments
 usage() {
   echo "Usage: $0 --ip <VM_IP>"
   exit 1
 }
-
-# Require exactly one argument: --ip <VM_IP>
 if [ "$#" -ne 2 ] || [ "$1" != "--ip" ]; then
   usage
 fi
@@ -15,7 +13,7 @@ VM_IP="$2"
 VM_USER="user"
 SSH_KEY="$HOME/.ssh/id_ed25519"
 
-# SSH options: use your ed25519 key, skip host prompts, suppress warnings
+# SSH options
 SSH_OPTS=(
   -i "$SSH_KEY"
   -o StrictHostKeyChecking=no
@@ -23,7 +21,7 @@ SSH_OPTS=(
   -o LogLevel=ERROR
 )
 
-# Wait for the VM to come back online after a reboot
+# Wait for VM to come back online after reboot
 wait_for_ssh() {
   echo -n "Waiting for VM to come back online"
   for _ in $(seq 1 60); do
@@ -38,15 +36,13 @@ wait_for_ssh() {
   exit 1
 }
 
-# Run a step script: remotely for steps 1–4, locally for step5
+# Run a step script remotely (or locally for run step)
 run_step() {
   local script="$1"
-  echo "▶️  Running $script..."
-  if [ "$script" = "step5_run.sh" ]; then
-    # execute locally
+  echo "▶️ Running $script..."
+  if [ "$script" = "step4_run.sh" ]; then
     bash "./$script" --ip "$VM_IP"
   else
-    # execute on VM and handle reboots
     set +e
     ssh "${SSH_OPTS[@]}" "${VM_USER}@${VM_IP}" "bash ~/${script}"
     local status=$?
@@ -61,18 +57,24 @@ run_step() {
   fi
 }
 
-# Upload remote-only step scripts
-scp "${SSH_OPTS[@]}" step1_os.sh step2_gpu.sh step3_docker.sh step4_models.sh "${VM_USER}@${VM_IP}":~/
+# Upload remote scripts
+scp "${SSH_OPTS[@]}" step1_os.sh step2_gpu.sh step3_docker.sh step5_nodes.sh "${VM_USER}@${VM_IP}":~/
 
-# Make remote scripts executable
-ssh "${SSH_OPTS[@]}" "${VM_USER}@${VM_IP}" \
-  "chmod +x ~/step1_os.sh ~/step2_gpu.sh ~/step3_docker.sh ~/step4_models.sh"
+# Make scripts executable
+ssh "${SSH_OPTS[@]}" "${VM_USER}@${VM_IP}" "chmod +x ~/step1_os.sh ~/step2_gpu.sh ~/step3_docker.sh ~/step5_nodes.sh"
 
-# Execute steps in order
+# Get HOME inside the container to set globally consistent CONTAINER_HOME
+CONTAINER_HOME=$(ssh "${SSH_OPTS[@]}" "${VM_USER}@${VM_IP}" "sudo docker run --rm pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime bash -c 'echo \$HOME'")
+echo "Detected CONTAINER_HOME: $CONTAINER_HOME"
+
+# Export CONTAINER_HOME to make available to steps
+export CONTAINER_HOME
+
+# Run step scripts in order
 run_step step1_os.sh
 run_step step2_gpu.sh
 run_step step3_docker.sh
-run_step step4_models.sh
-run_step step5_run.sh
+run_step step4_run.sh
+# run_step step5_nodes.sh
 
-echo "✅ All steps complete. You can now 'ssh ${VM_USER}@${VM_IP}' or access ComfyUI at http://localhost:8188"
+echo "✅ All steps complete."
