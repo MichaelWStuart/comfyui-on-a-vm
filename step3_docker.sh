@@ -97,6 +97,12 @@ sudo docker exec "$CONTAINER_NAME" git clone \
 sudo docker exec "$CONTAINER_NAME" pip3 install \
   -r /workspace/ComfyUI/requirements.txt
 
+# Inside the container: clone ComfyUI Manager node
+sudo docker exec "$CONTAINER_NAME" bash -c "\
+  cd /workspace/ComfyUI/custom_nodes && \
+  git clone https://github.com/ltdrdata/ComfyUI-Manager.git comfyui-manager \
+"
+
 # Final check: verify torch.cuda availability
 sudo docker exec "$CONTAINER_NAME" python3 - <<'PYCODE'
 import torch
