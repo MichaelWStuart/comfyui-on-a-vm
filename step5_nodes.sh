@@ -17,30 +17,7 @@ sudo docker exec "$CONTAINER_NAME" bash -c "
 
 # Your list of missing node names
 node=(
-    mxSlider
-    ScheduledCFGGuidance
-    easy-mathInt
-    SkipLayerGuidanceWanVideo
-    PatchModelPatcherOrder
-    TorchCompileModelWanVideo
-    VHS_VideoCombine
-    ColorMatch
-    ImageResizeKJv2
-    DownloadAndLoadFlorence2Model
-    easy-promptReplace
-    easy-showAnything
-    Power-Lora-Loader-rgthree
-    easy-mathFloat
-    easy-cleanGpuUsed
-    ApplyRifleXRoPE-WanVideo
-    easy-convertAnything
-    RIFE-VFI
-    PathchSageAttentionKJ
-    Fast-Groups-Bypasser-rgthree
-    Florence2Run
-    mxSlider2D
-    WanVideoTeaCacheKJ
-    Fast-Groups-Muter-rgthree
+
 )
 
 for node in "${nodes[@]}"; do

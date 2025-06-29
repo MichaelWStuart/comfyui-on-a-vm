@@ -21,6 +21,11 @@ SSH_OPTS=(
   -o LogLevel=ERROR
 )
 
+export VM_IP
+export VM_USER
+export SSH_KEY
+export SSH_OPTS
+
 # Wait for VM to come back online after reboot
 wait_for_ssh() {
   echo -n "Waiting for VM to come back online"
@@ -44,7 +49,7 @@ run_step() {
     bash "./$script" --ip "$VM_IP"
   else
     set +e
-    ssh "${SSH_OPTS[@]}" "${VM_USER}@${VM_IP}" "bash ~/${script}"
+    ssh "${SSH_OPTS[@]}" "${VM_USER}@${VM_IP}" "VM_IP='$VM_IP' VM_USER='$VM_USER' SSH_KEY='$SSH_KEY' CONTAINER_HOME='$CONTAINER_HOME' bash ~/${script}"
     local status=$?
     set -e
     if [ $status -eq 255 ]; then
@@ -58,10 +63,10 @@ run_step() {
 }
 
 # Upload remote scripts
-scp "${SSH_OPTS[@]}" step1_os.sh step2_gpu.sh step3_docker.sh step5_nodes.sh "${VM_USER}@${VM_IP}":~/
+scp "${SSH_OPTS[@]}" step1_os.sh step2_gpu.sh step3_docker.sh step5_nodes.sh step6_models.sh "${VM_USER}@${VM_IP}":~/
 
 # Make scripts executable
-ssh "${SSH_OPTS[@]}" "${VM_USER}@${VM_IP}" "chmod +x ~/step1_os.sh ~/step2_gpu.sh ~/step3_docker.sh ~/step5_nodes.sh"
+ssh "${SSH_OPTS[@]}" "${VM_USER}@${VM_IP}" "chmod +x ~/step1_os.sh ~/step2_gpu.sh ~/step3_docker.sh ~/step5_nodes.sh ~/step6_models.sh"
 
 # Get HOME inside the container to set globally consistent CONTAINER_HOME
 CONTAINER_HOME=$(ssh "${SSH_OPTS[@]}" "${VM_USER}@${VM_IP}" "sudo docker run --rm pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime bash -c 'echo \$HOME'")
@@ -71,10 +76,13 @@ echo "Detected CONTAINER_HOME: $CONTAINER_HOME"
 export CONTAINER_HOME
 
 # Run step scripts in order
-# run_step step1_os.sh
-# run_step step2_gpu.sh
-# run_step step3_docker.sh
+run_step step1_os.sh
+run_step step2_gpu.sh
+run_step step3_docker.sh
 run_step step4_run.sh
-# run_step step5_nodes.sh
+run_step step5_nodes.sh
+
+# TODO fix
+# ./step6_models.sh
 
 echo "✅ All steps complete."
